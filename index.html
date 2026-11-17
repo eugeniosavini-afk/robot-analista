@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Robot Analista · Analizador de canales de YouTube</title>
+  <meta name="description" content="Descubrí qué títulos, formatos y horarios le funcionan a un canal de YouTube. Usa la API oficial de YouTube con tu propia clave.">
+  <meta name="theme-color" content="#0f172a">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Robot Analista">
+  <link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+  <header class="barra no-print">
+    <div class="marca"><img src="icons/icon-192.png" alt="" width="32" height="32"><span>Robot Analista</span></div>
+    <nav>
+      <button class="nav-btn" data-ir="inicio" hidden>Analizar</button>
+      <button class="nav-btn" data-ir="ajustes" hidden>Ajustes</button>
+      <button id="btn-instalar" class="nav-btn destacado" hidden>Instalar</button>
+    </nav>
+  </header>
+
+  <main id="app">
+    <!-- 1) Licencia -->
+    <section id="pantalla-licencia" class="pantalla" hidden>
+      <div class="tarjeta centro">
+        <img src="icons/icon-512.png" alt="" class="logo-grande">
+        <h1>Activá tu licencia</h1>
+        <p>Pegá el código que te llegó por mail al comprar (empieza con <b>RA-</b>).</p>
+        <form id="form-licencia" autocomplete="off">
+          <input id="in-licencia" class="campo mono" placeholder="RA-XXXXX-XXXXX-XXXXX-XXXXX" maxlength="40" spellcheck="false" autocapitalize="characters" required>
+          <button class="btn primario ancho" type="submit">Activar</button>
+          <p id="msg-licencia" class="msg" role="alert"></p>
+        </form>
+        <button id="btn-demo" class="btn link">Ver un reporte de ejemplo (sin licencia)</button>
+      </div>
+    </section>
+
+    <!-- 2) Clave de API -->
+    <section id="pantalla-clave" class="pantalla" hidden>
+      <div class="tarjeta">
+        <h1>Conectá la API de YouTube</h1>
+        <p>Robot Analista usa la <b>API oficial de YouTube</b> con <b>tu propia clave gratuita</b>. Se guarda solo en este dispositivo y no se envía a ningún otro servidor.</p>
+        <form id="form-clave" autocomplete="off">
+          <label for="in-clave">Tu clave de API</label>
+          <input id="in-clave" class="campo mono" placeholder="AIza…" spellcheck="false" required>
+          <button class="btn primario ancho" type="submit">Guardar y probar</button>
+          <p id="msg-clave" class="msg" role="alert"></p>
+        </form>
+        <details class="guia" open>
+          <summary>¿Cómo consigo la clave gratis? (5 minutos)</summary>
+          <ol>
+            <li>Entrá a <a href="https://console.cloud.google.com/" target="_blank" rel="noopener">console.cloud.google.com</a> con tu cuenta de Google. Es gratis y para esto <b>no pide tarjeta</b>.</li>
+            <li>Arriba a la izquierda tocá el selector de proyecto → <b>Proyecto nuevo</b> → nombre: <i>Robot Analista</i> → <b>Crear</b>. Asegurate de que quede seleccionado.</li>
+            <li>Menú ☰ → <b>APIs y servicios</b> → <b>Biblioteca</b>. Buscá <b>YouTube Data API v3</b> y tocá <b>Habilitar</b>.</li>
+            <li>Menú ☰ → <b>APIs y servicios</b> → <b>Credenciales</b> → <b>+ Crear credenciales</b> → <b>Clave de API</b>. Copiá la clave (empieza con <span class="mono">AIza</span>).</li>
+            <li><b>Recomendado:</b> en la clave tocá <b>Editar</b> → <i>Restricciones de API</i> → <b>Restringir clave</b> → marcá solo <b>YouTube Data API v3</b> → <b>Guardar</b>.</li>
+            <li>Pegala arriba y tocá <b>Guardar y probar</b>.</li>
+          </ol>
+          <p class="nota">Cuota gratis: 10.000 unidades por día. Cada canal analizado usa unas 3 unidades, así que alcanza para cientos de análisis diarios.</p>
+        </details>
+      </div>
+    </section>
+
+    <!-- 3) Inicio / análisis -->
+    <section id="pantalla-inicio" class="pantalla" hidden>
+      <div class="tarjeta">
+        <h1>Analizar canales</h1>
+        <p class="sub">Escribí el <b>@usuario</b> o el link del canal. Podés comparar hasta 3.</p>
+        <form id="form-canales" autocomplete="off">
+          <div id="lista-canales">
+            <input class="campo in-canal" placeholder="@canal o https://youtube.com/@canal" spellcheck="false" autocapitalize="off" required>
+          </div>
+          <button id="btn-agregar" type="button" class="btn secundario">+ Agregar canal para comparar</button>
+          <details class="opciones">
+            <summary>Opciones</summary>
+            <label for="in-tema">Tema para las ideas de títulos (opcional)</label>
+            <input id="in-tema" class="campo" placeholder="Ej.: autos clásicos, recetas fáciles (separá con comas)">
+            <label class="check"><input type="checkbox" id="in-refrescar"> Ignorar datos guardados y volver a consultar YouTube</label>
+          </details>
+          <button class="btn primario ancho" type="submit" id="btn-analizar">Analizar</button>
+        </form>
+        <div id="progreso" class="progreso" hidden><div class="spinner"></div><span id="progreso-txt">Consultando YouTube…</span></div>
+        <p id="msg-inicio" class="msg" role="alert"></p>
+        <div id="historial" class="historial"></div>
+      </div>
+      <p class="pie">Solo lee datos públicos (títulos, vistas, likes, comentarios, duración, fecha, etiquetas y largo de la descripción) de los últimos 50 videos. No descarga videos ni cambia nada en YouTube. <a href="privacidad.html">Privacidad</a></p>
+    </section>
+
+    <!-- 4) Reporte -->
+    <section id="pantalla-reporte" class="pantalla" hidden>
+      <div class="acciones no-print">
+        <button class="btn secundario" data-ir="inicio">← Nuevo análisis</button>
+        <div class="derecha">
+          <button id="btn-pdf" class="btn secundario">PDF</button>
+          <button id="btn-csv" class="btn secundario">CSV</button>
+        </div>
+      </div>
+      <div id="tabs" class="tabs no-print"></div>
+      <div id="reporte"></div>
+    </section>
+
+    <!-- 5) Ajustes -->
+    <section id="pantalla-ajustes" class="pantalla" hidden>
+      <div class="tarjeta">
+        <h1>Ajustes</h1>
+        <h3>Clave de API de YouTube</h3>
+        <p id="aj-clave" class="mono"></p>
+        <button class="btn secundario" id="btn-cambiar-clave">Cambiar clave</button>
+        <h3>Licencia</h3>
+        <p id="aj-licencia" class="mono"></p>
+        <h3>Datos guardados</h3>
+        <p>Los análisis se guardan 6 horas en este dispositivo para no gastar cuota.</p>
+        <button class="btn secundario" id="btn-borrar-cache">Borrar análisis guardados</button>
+        <button class="btn peligro" id="btn-borrar-todo">Borrar todo (clave, licencia y datos)</button>
+        <h3>Acerca de</h3>
+        <p class="nota">Robot Analista v<span id="version"></span>. Usa la YouTube Data API v3 oficial. No está afiliado ni respaldado por YouTube ni Google. Los resultados son estadísticas sobre datos públicos, no garantías de vistas. <a href="privacidad.html">Privacidad</a>.</p>
+      </div>
+    </section>
+  </main>
+
+  <div id="toast" class="toast" hidden></div>
+
+  <script src="js/licencia.js"></script>
+  <script src="js/analisis.js"></script>
+  <script src="js/youtube.js"></script>
+  <script src="js/demo.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
